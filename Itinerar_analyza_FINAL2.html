@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analýza itineráře Přemysla Otakara II.</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #f5f3ef;
+  --surface: #ffffff;
+  --card: #f8f6f2;
+  --border: #e0dbd0;
+  --border2: #ccc7bb;
+  --accent: #e05c5c;
+  --accent2: #c94444;
+  --accent-dim: #f0a0a0;
+  --accent-bg: rgba(224, 92, 92, 0.08);
+  --text: #1a1614;
+  --text2: #4a4240;
+  --text3: #888078;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Georgia, serif; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; min-height: 100vh; }
+
+.header { background: var(--accent); color: white; padding: 24px; border-radius: 8px; margin-bottom: 24px; }
+.header h1 { font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.header p { font-size: 14px; opacity: 0.95; }
+
+.filters { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 6px; }
+.filter-group label { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; font-family: 'Montserrat', sans-serif; }
+.filter-group select { padding: 8px 12px; border: 1px solid var(--border2); border-radius: 4px; font-family: 'Lora', serif; font-size: 14px; color: var(--text); background: white; cursor: pointer; min-width: 180px; }
+.filter-group select:hover { border-color: var(--accent); }
+.filter-group select:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
+
+.btn-reset { padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 4px; font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; text-transform: uppercase; }
+.btn-reset:hover { background: var(--accent2); }
+
+.dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+.card h2 { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; color: var(--accent); text-transform: uppercase; margin-bottom: 16px; border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+
+.metric { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+.metric:last-child { border-bottom: none; }
+.metric-label { font-size: 13px; color: var(--text3); }
+.metric-value { font-family: 'Montserrat', sans-serif; font-size: 14px; font-weight: 700; color: var(--accent); }
+
+.bar { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+.bar-label { font-size: 12px; color: var(--text2); min-width: 100px; }
+.bar-fill { height: 20px; background: linear-gradient(90deg, var(--accent), var(--accent-dim)); border-radius: 3px; min-width: 40px; }
+.bar-value { font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 600; color: var(--accent); min-width: 30px; text-align: right; }
+
+.chart-container { position: relative; width: 100%; height: 300px; margin-top: 12px; }
+.wide { grid-column: 1 / -1; }
+
+@media (max-width: 768px) {
+  .dashboard { grid-template-columns: 1fr; }
+  .filters { flex-direction: column; }
+  .filter-group select { min-width: auto; width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>📊 Analýza Otakara II.</h1>
+    <p>Statistika, grafy a top místa, instituce, vydavatelé</p>
+  </div>
+
+  <div class="filters">
+    <div class="filter-group">
+      <label>Časové období</label>
+      <select id="periode-select">
+        <option value="">Všechna období</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Vydavatel</label>
+      <select id="issuer-select">
+        <option value="">Všichni vydavatelé</option>
+        <option value="Ja">Přemysl Otakar II.</option>
+        <option value="-">Jiní</option>
+      </select>
+    </div>
+    <button class="btn-reset" onclick="resetMainFilters()">↺ Resetovat grafy</button>
+  </div>
+
+  <div class="dashboard">
+    <div class="card">
+      <h2>Přehled</h2>
+      <div class="metric">
+        <span class="metric-label">Celkem listin</span>
+        <span class="metric-value" id="stat-total">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Míst vydání</span>
+        <span class="metric-value" id="stat-places">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Institucí</span>
+        <span class="metric-value" id="stat-inst">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Neznámých míst</span>
+        <span class="metric-value" id="stat-unknown">—</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Top 10 míst vydání</h2>
+      <div id="top-places"></div>
+    </div>
+
+    <div class="card">
+      <h2>Autentičnost listin</h2>
+      <div class="metric">
+        <span class="metric-label">Autentické</span>
+        <span class="metric-value" id="stat-authentic">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Padělky</span>
+        <span class="metric-value" id="stat-forged">—</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">% padělků</span>
+        <span class="metric-value" id="stat-forge-pct">—</span>
+      </div>
+    </div>
+
+    <div class="card wide">
+      <h2>Listiny podle časového období</h2>
+      <div class="chart-container">
+        <canvas id="chart-period"></canvas>
+      </div>
+    </div>
+
+    <div class="card wide">
+      <h2>Geografická distribuce vydání (top 15 míst)</h2>
+      <div class="chart-container">
+        <canvas id="chart-places"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Jistota datace</h2>
+      <div id="certainty-levels"></div>
+    </div>
+
+    <div class="card">
+      <h2>Top institucí</h2>
+      <div id="top-inst"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let ALL_DATA = [];
+let chartPeriod = null;
+let chartPlaces = null;
+
+const PERIODS = [
+  { label: "Období 1246-1251", start: 1246, end: 1251 },
+  { label: "Období 1251-1253", start: 1251, end: 1253 },
+  { label: "Období 1253-1260", start: 1253, end: 1260 },
+  { label: "Období 1260-1270", start: 1260, end: 1270 },
+  { label: "Období 1270-1276", start: 1270, end: 1276 },
+  { label: "Období 1276-1278", start: 1276, end: 1278 }
+];
+
+function extractYear(datum) {
+  if (!datum) return null;
+  const match = datum.toString().match(/\d{4}/);
+  if (match) {
+    const year = parseInt(match[0]);
+    if (year > 1200 && year < 1400) return year;
+  }
+  return null;
+}
+
+function initFilters() {
+  const select = document.getElementById('periode-select');
+  PERIODS.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.label;
+    opt.textContent = p.label;
+    select.appendChild(opt);
+  });
+}
+
+function getMainFilteredData() {
+  const periode = document.getElementById('periode-select').value;
+  const issuer = document.getElementById('issuer-select').value;
+  
+  return ALL_DATA.filter(d => {
+    if (issuer && d.poII_aussteller !== issuer) return false;
+    
+    if (periode) {
+      const period = PERIODS.find(p => p.label === periode);
+      if (period) {
+        const year = extractYear(d.Datum);
+        if (!year || year < period.start || year > period.end) return false;
+      }
+    }
+    
+    return true;
+  });
+}
+
+function updateDashboard() {
+  const data = getMainFilteredData();
+  
+  document.getElementById('stat-total').textContent = data.length;
+  const places = data.filter(d => d.lokalitat_name && d.lokalitat_name !== '???');
+  document.getElementById('stat-places').textContent = new Set(places.map(d => d.lokalitat_name)).size;
+  const inst = data.filter(d => d.beschenkte_institution_text);
+  document.getElementById('stat-inst').textContent = new Set(inst.map(d => d.beschenkte_institution_text)).size;
+  const unknown = data.filter(d => !d.lokalitat_name || d.lokalitat_name === '???').length;
+  document.getElementById('stat-unknown').textContent = unknown;
+  
+  const auth = data.filter(d => !d.verfalscht).length;
+  const forged = data.filter(d => d.verfalscht).length;
+  document.getElementById('stat-authentic').textContent = auth;
+  document.getElementById('stat-forged').textContent = forged;
+  document.getElementById('stat-forge-pct').textContent = data.length ? ((forged / data.length) * 100).toFixed(1) + '%' : '0%';
+  
+  updateTopPlaces(data);
+  updateTopInstitutions(data);
+  updateCertainty(data);
+  updateCharts(data);
+}
+
+function updateTopPlaces(data) {
+  const places = {};
+  data.forEach(d => {
+    if (d.lokalitat_name && d.lokalitat_name !== '???') {
+      places[d.lokalitat_name] = (places[d.lokalitat_name] || 0) + 1;
+    }
+  });
+  
+  const sorted = Object.entries(places).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  const maxVal = sorted[0]?.[1] || 1;
+  
+  const html = sorted.map(([place, count]) => `
+    <div class="bar">
+      <span class="bar-label">${place}</span>
+      <div class="bar-fill" style="width: ${(count / maxVal) * 100}%"></div>
+      <span class="bar-value">${count}</span>
+    </div>
+  `).join('');
+  
+  document.getElementById('top-places').innerHTML = html || '<p>Žádná data</p>';
+}
+
+function updateTopInstitutions(data) {
+  const inst = {};
+  data.forEach(d => {
+    if (d.beschenkte_institution_text) {
+      inst[d.beschenkte_institution_text] = (inst[d.beschenkte_institution_text] || 0) + 1;
+    }
+  });
+  
+  const sorted = Object.entries(inst).sort((a, b) => b[1] - a[1]).slice(0, 8);
+  const html = sorted.map(([i, count]) => `
+    <div class="metric">
+      <span class="metric-label">${i.substring(0, 40)}</span>
+      <span class="metric-value">${count}</span>
+    </div>
+  `).join('');
+  
+  document.getElementById('top-inst').innerHTML = html || '<p>Žádná data</p>';
+}
+
+function updateCertainty(data) {
+  const cert = {};
+  data.forEach(d => {
+    const level = d.sicherheit || 'Neznámá';
+    cert[level] = (cert[level] || 0) + 1;
+  });
+  
+  const sorted = Object.entries(cert).sort((a, b) => (parseFloat(b[0]) || -1) - (parseFloat(a[0]) || -1));
+  const html = sorted.map(([level, count]) => `
+    <div class="metric">
+      <span class="metric-label">${level === 'Neznámá' ? 'Neznámá' : 'Úroveň ' + level}</span>
+      <span class="metric-value">${count}</span>
+    </div>
+  `).join('');
+  
+  document.getElementById('certainty-levels').innerHTML = html;
+}
+
+function updateCharts(data) {
+  const byPeriod = {};
+  PERIODS.forEach(p => byPeriod[p.label] = 0);
+  
+  data.forEach(d => {
+    const year = extractYear(d.Datum);
+    if (year) {
+      const period = PERIODS.find(p => year >= p.start && year <= p.end);
+      if (period) byPeriod[period.label]++;
+    }
+  });
+  
+  if (chartPeriod) chartPeriod.destroy();
+  chartPeriod = new Chart(document.getElementById('chart-period'), {
+    type: 'bar',
+    data: {
+      labels: Object.keys(byPeriod),
+      datasets: [{ label: 'Počet listin', data: Object.values(byPeriod), backgroundColor: '#e05c5c', borderColor: '#c94444', borderWidth: 0.5 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+  });
+  
+  const places = {};
+  data.forEach(d => {
+    if (d.lokalitat_name && d.lokalitat_name !== '???') {
+      places[d.lokalitat_name] = (places[d.lokalitat_name] || 0) + 1;
+    }
+  });
+  
+  const placesSorted = Object.entries(places).sort((a, b) => b[1] - a[1]).slice(0, 15);
+  
+  if (chartPlaces) chartPlaces.destroy();
+  chartPlaces = new Chart(document.getElementById('chart-places'), {
+    type: 'bar',
+    data: {
+      labels: placesSorted.map(p => p[0]),
+      datasets: [{ label: 'Počet listin', data: placesSorted.map(p => p[1]), backgroundColor: '#e05c5c', borderColor: '#c94444', borderWidth: 0.5 }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { beginAtZero: true } } }
+  });
+}
+
+function resetMainFilters() {
+  document.getElementById('periode-select').value = '';
+  document.getElementById('issuer-select').value = '';
+  updateDashboard();
+}
+
+document.getElementById('periode-select').addEventListener('change', updateDashboard);
+document.getElementById('issuer-select').addEventListener('change', updateDashboard);
+
+async function loadData() {
+  const candidates = [
+    '../listiny_data.json',
+    'listiny_data.json',
+    '/listiny_data.json'
+  ];
+  for (const url of candidates) {
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        ALL_DATA = await resp.json();
+        initFilters();
+        updateDashboard();
+        return;
+      }
+    } catch (_) {}
+  }
+  document.querySelector('.dashboard').innerHTML =
+    '<p style="padding:40px;color:var(--accent);text-align:center">Nepodařilo se načíst data (listiny_data.json).</p>';
+}
+
+loadData();
+</script>
+
+</body>
+</html>
