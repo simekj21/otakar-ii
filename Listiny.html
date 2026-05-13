@@ -50,6 +50,12 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Geo
 .upload-status.success { color: var(--green); }
 .upload-status.error { color: var(--accent); }
 .upload-info { font-size: 11px; color: var(--text3); margin-top: 10px; line-height: 1.6; background: var(--card); border-radius: 4px; padding: 10px 12px; }
+.upload-save { display: flex; gap: 8px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.upload-save input[type="password"] { padding: 8px 10px; border: 1px solid var(--border2); border-radius: 4px; font-family: 'Montserrat', sans-serif; font-size: 12px; width: 160px; }
+.upload-save input[type="password"]:focus { outline: none; border-color: var(--green); }
+.btn-blue { background: #2c5f8a; color: white; }
+.btn-blue:hover { background: #1e4266; }
+.btn-blue:disabled { background: #aaa; cursor: not-allowed; }
 
 .filters { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; align-items: flex-end; }
 .filter-group { display: flex; flex-direction: column; gap: 6px; }
@@ -112,13 +118,17 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Geo
     </div>
     <input type="file" id="file-input" accept=".xlsx" onchange="handleFileSelect(event)">
     <div class="upload-actions">
-      <button class="btn-action btn-green" id="btn-download-json" onclick="downloadJson()" disabled>⬇ Stáhnout listiny_data.json</button>
+      <button class="btn-action btn-green" id="btn-download-json" onclick="downloadJson()" disabled>⬇ Stáhnout JSON</button>
       <span class="upload-status" id="upload-status"></span>
     </div>
+    <div class="upload-save">
+      <input type="password" id="save-password" placeholder="Heslo pro uložení…">
+      <button class="btn-action btn-blue" id="btn-save-server" onclick="saveToServer()" disabled>☁ Uložit na server</button>
+      <span class="upload-status" id="save-status"></span>
+    </div>
     <div class="upload-info">
-      <strong>Postup aktualizace:</strong> Nahrajte nový soubor xlsx → stránka zpracuje data →
-      stáhněte vygenerovaný <code>listiny_data.json</code> → nahrajte ho do kořenového adresáře webu
-      (nahraďte stávající soubor). Ostatní stránky webu si automaticky načtou aktualizovaná data.
+      Nahrajte xlsx → stránka zpracuje data. Poté buď <strong>stáhněte JSON</strong> a umístěte ho ručně do kořene webu,
+      nebo zadejte heslo a klikněte <strong>Uložit na server</strong> — ostatní moduly (mapa, analýza…) se okamžitě aktualizují.
     </div>
   </div>
 
@@ -186,6 +196,7 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Geo
 
 <script>
 let ALL_DATA = [];
+let pendingRows = null;
 let pendingJsonBlob = null;
 let currentPage = 1;
 const itemsPerPage = 50;
@@ -275,10 +286,13 @@ function processXlsx(file) {
       }
 
       ALL_DATA = rows;
+      pendingRows = rows;
       const jsonStr = JSON.stringify(rows, null, null);
       pendingJsonBlob = new Blob([jsonStr], { type: 'application/json' });
 
       document.getElementById('btn-download-json').disabled = false;
+      document.getElementById('btn-save-server').disabled = false;
+      document.getElementById('save-status').textContent = '';
       setUploadStatus(`✓ Načteno ${rows.length} záznamů z „${file.name}"`, 'success');
 
       initFilters();
@@ -297,6 +311,54 @@ function downloadJson() {
   a.download = 'listiny_data.json';
   a.click();
   URL.revokeObjectURL(a.href);
+}
+
+async function saveToServer() {
+  if (!pendingRows) return;
+  const password = document.getElementById('save-password').value;
+  if (!password) {
+    setSaveStatus('Zadejte heslo', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('btn-save-server');
+  btn.disabled = true;
+  setSaveStatus('Ukládám…', '');
+
+  const endpoints = [
+    '../save_listiny_data.php',
+    'save_listiny_data.php',
+    '/save_listiny_data.php'
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, data: pendingRows })
+      });
+      const result = await resp.json();
+      if (result.ok) {
+        setSaveStatus('✓ ' + result.message, 'success');
+        btn.disabled = false;
+        return;
+      } else {
+        setSaveStatus('Chyba: ' + result.error, 'error');
+        btn.disabled = false;
+        return;
+      }
+    } catch (_) {}
+  }
+
+  setSaveStatus('Nepodařilo se spojit se serverem', 'error');
+  btn.disabled = false;
+}
+
+function setSaveStatus(msg, type) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.className = 'upload-status' + (type ? ' ' + type : '');
 }
 
 function setUploadStatus(msg, type) {
