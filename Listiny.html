@@ -315,7 +315,6 @@ async function saveToServer() {
 
   const btn = document.getElementById('btn-save-server');
   btn.disabled = true;
-  setSaveStatus('Ukládám…', '');
 
   const endpoints = [
     '../save_listiny_data.php',
@@ -324,26 +323,35 @@ async function saveToServer() {
   ];
 
   for (const url of endpoints) {
+    setSaveStatus(`Zkouším ${url} …`, '');
     try {
       const resp = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pendingRows)
       });
-      const result = await resp.json();
+      const text = await resp.text();
+      let result;
+      try { result = JSON.parse(text); } catch(_) {
+        setSaveStatus(`Chyba (${url}): server vrátil nečekanou odpověď: ${text.substring(0, 120)}`, 'error');
+        btn.disabled = false;
+        return;
+      }
       if (result.ok) {
         setSaveStatus('✓ ' + result.message, 'success');
         btn.disabled = false;
         return;
       } else {
-        setSaveStatus('Chyba: ' + result.error, 'error');
+        setSaveStatus(`Chyba (${url}): ${result.error}`, 'error');
         btn.disabled = false;
         return;
       }
-    } catch (_) {}
+    } catch (e) {
+      setSaveStatus(`Endpoint ${url} nedostupný (${e.message}), zkouším další…`, '');
+    }
   }
 
-  setSaveStatus('Nepodařilo se spojit se serverem', 'error');
+  setSaveStatus('Nepodařilo se spojit se žádným endpointem. Zkontrolujte že save_listiny_data.php je v kořeni webu.', 'error');
   btn.disabled = false;
 }
 

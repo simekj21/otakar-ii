@@ -25,24 +25,37 @@ if (!$body) {
 $data = json_decode($body, true);
 if (!is_array($data)) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Data musí být JSON pole']);
+    echo json_encode(['ok' => false, 'error' => 'Data musí být JSON pole, přijato: ' . substr($body, 0, 80)]);
     exit;
 }
 
 $target = __DIR__ . '/listiny_data.json';
 
+// Záloha předchozí verze
 if (file_exists($target)) {
     copy($target, $target . '.bak');
 }
 
-if (file_put_contents($target, json_encode($data, JSON_UNESCAPED_UNICODE)) === false) {
+$json = json_encode($data, JSON_UNESCAPED_UNICODE);
+$written = file_put_contents($target, $json);
+
+if ($written === false) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Nelze zapsat soubor — zkontrolujte oprávnění']);
+    echo json_encode([
+        'ok' => false,
+        'error' => 'Nelze zapsat soubor — zkontrolujte oprávnění pro zápis',
+        'target_path' => $target,
+        'dir_writable' => is_writable(__DIR__),
+        'file_exists' => file_exists($target),
+        'file_writable' => file_exists($target) ? is_writable($target) : 'neexistuje'
+    ]);
     exit;
 }
 
 echo json_encode([
     'ok' => true,
     'records' => count($data),
-    'message' => 'listiny_data.json aktualizován (' . count($data) . ' záznamů)'
+    'message' => 'listiny_data.json aktualizován (' . count($data) . ' záznamů)',
+    'path' => $target,
+    'bytes' => $written
 ]);
