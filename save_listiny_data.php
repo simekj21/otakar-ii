@@ -25,13 +25,13 @@ if (!$body) {
 $data = json_decode($body, true);
 if (!is_array($data)) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Data musí být JSON pole, přijato: ' . substr($body, 0, 80)]);
+    echo json_encode(['ok' => false, 'error' => 'Data musí být JSON pole']);
     exit;
 }
 
-$target = __DIR__ . '/listiny_data.json';
+// Tento soubor je ve složce /listiny/, zapisujeme o úroveň výš do kořene webu
+$target = dirname(__DIR__) . '/listiny_data.json';
 
-// Záloha předchozí verze
 if (file_exists($target)) {
     copy($target, $target . '.bak');
 }
@@ -43,9 +43,9 @@ if ($written === false) {
     http_response_code(500);
     echo json_encode([
         'ok' => false,
-        'error' => 'Nelze zapsat soubor — zkontrolujte oprávnění pro zápis',
+        'error' => 'Nelze zapsat soubor — zkontrolujte oprávnění',
         'target_path' => $target,
-        'dir_writable' => is_writable(__DIR__),
+        'dir_writable' => is_writable(dirname($target)),
         'file_exists' => file_exists($target),
         'file_writable' => file_exists($target) ? is_writable($target) : 'neexistuje'
     ]);
