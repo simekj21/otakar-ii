@@ -211,7 +211,7 @@ const PERIODS = [
 
 async function loadData() {
   try {
-    const resp = await fetch('listiny_data.json');
+    const resp = await fetch('listiny_data.json?v=' + Date.now());
     if (resp.ok) {
       ALL_DATA = await resp.json();
       initFilters();

@@ -139,7 +139,7 @@ function initMap() {
 
 async function loadData() {
   try {
-    const resp = await fetch('listiny_data.json');
+    const resp = await fetch('listiny_data.json?v=' + Date.now());
     if (resp.ok) {
       DATA = await resp.json();
       initMap();
