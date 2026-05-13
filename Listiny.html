@@ -51,8 +51,6 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Geo
 .upload-status.error { color: var(--accent); }
 .upload-info { font-size: 11px; color: var(--text3); margin-top: 10px; line-height: 1.6; background: var(--card); border-radius: 4px; padding: 10px 12px; }
 .upload-save { display: flex; gap: 8px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); flex-wrap: wrap; }
-.upload-save input[type="password"] { padding: 8px 10px; border: 1px solid var(--border2); border-radius: 4px; font-family: 'Montserrat', sans-serif; font-size: 12px; width: 160px; }
-.upload-save input[type="password"]:focus { outline: none; border-color: var(--green); }
 .btn-blue { background: #2c5f8a; color: white; }
 .btn-blue:hover { background: #1e4266; }
 .btn-blue:disabled { background: #aaa; cursor: not-allowed; }
@@ -122,7 +120,6 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Geo
       <span class="upload-status" id="upload-status"></span>
     </div>
     <div class="upload-save">
-      <input type="password" id="save-password" placeholder="Heslo pro uložení…">
       <button class="btn-action btn-blue" id="btn-save-server" onclick="saveToServer()" disabled>☁ Uložit na server</button>
       <span class="upload-status" id="save-status"></span>
     </div>
@@ -315,11 +312,6 @@ function downloadJson() {
 
 async function saveToServer() {
   if (!pendingRows) return;
-  const password = document.getElementById('save-password').value;
-  if (!password) {
-    setSaveStatus('Zadejte heslo', 'error');
-    return;
-  }
 
   const btn = document.getElementById('btn-save-server');
   btn.disabled = true;
@@ -336,7 +328,7 @@ async function saveToServer() {
       const resp = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, data: pendingRows })
+        body: JSON.stringify(pendingRows)
       });
       const result = await resp.json();
       if (result.ok) {
