@@ -210,23 +210,15 @@ const PERIODS = [
 // --- Načtení dat ---
 
 async function loadData() {
-  const candidates = [
-    '../listiny_data.json',
-    'listiny_data.json',
-    '/listiny_data.json'
-  ];
-
-  for (const url of candidates) {
-    try {
-      const resp = await fetch(url);
-      if (resp.ok) {
-        ALL_DATA = await resp.json();
-        initFilters();
-        updateTable();
-        return;
-      }
-    } catch (_) {}
-  }
+  try {
+    const resp = await fetch('listiny_data.json');
+    if (resp.ok) {
+      ALL_DATA = await resp.json();
+      initFilters();
+      updateTable();
+      return;
+    }
+  } catch (_) {}
 
   document.getElementById('table-body').innerHTML =
     '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--accent)">Nepodařilo se načíst data. Nahrajte soubor xlsx tlačítkem "Aktualizovat data".</td></tr>';

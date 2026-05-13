@@ -345,22 +345,15 @@ document.getElementById('periode-select').addEventListener('change', updateDashb
 document.getElementById('issuer-select').addEventListener('change', updateDashboard);
 
 async function loadData() {
-  const candidates = [
-    '../listiny_data.json',
-    'listiny_data.json',
-    '/listiny_data.json'
-  ];
-  for (const url of candidates) {
-    try {
-      const resp = await fetch(url);
-      if (resp.ok) {
-        ALL_DATA = await resp.json();
-        initFilters();
-        updateDashboard();
-        return;
-      }
-    } catch (_) {}
-  }
+  try {
+    const resp = await fetch('listiny_data.json');
+    if (resp.ok) {
+      ALL_DATA = await resp.json();
+      initFilters();
+      updateDashboard();
+      return;
+    }
+  } catch (_) {}
   document.querySelector('.dashboard').innerHTML =
     '<p style="padding:40px;color:var(--accent);text-align:center">Nepodařilo se načíst data (listiny_data.json).</p>';
 }

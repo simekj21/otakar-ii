@@ -29,8 +29,8 @@ if (!is_array($data)) {
     exit;
 }
 
-// Tento soubor je ve složce /listiny/, zapisujeme o úroveň výš do kořene webu
-$target = dirname(__DIR__) . '/listiny_data.json';
+// Zapisujeme do stejného adresáře kde leží tento PHP soubor
+$target = __DIR__ . '/listiny_data.json';
 
 if (file_exists($target)) {
     copy($target, $target . '.bak');
@@ -45,7 +45,7 @@ if ($written === false) {
         'ok' => false,
         'error' => 'Nelze zapsat soubor — zkontrolujte oprávnění',
         'target_path' => $target,
-        'dir_writable' => is_writable(dirname($target)),
+        'dir_writable' => is_writable(__DIR__),
         'file_exists' => file_exists($target),
         'file_writable' => file_exists($target) ? is_writable($target) : 'neexistuje'
     ]);
@@ -56,6 +56,5 @@ echo json_encode([
     'ok' => true,
     'records' => count($data),
     'message' => 'listiny_data.json aktualizován (' . count($data) . ' záznamů)',
-    'path' => $target,
     'bytes' => $written
 ]);

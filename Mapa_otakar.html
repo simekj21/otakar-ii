@@ -138,21 +138,14 @@ function initMap() {
 }
 
 async function loadData() {
-  const candidates = [
-    '../listiny_data.json',
-    'listiny_data.json',
-    '/listiny_data.json'
-  ];
-  for (const url of candidates) {
-    try {
-      const resp = await fetch(url);
-      if (resp.ok) {
-        DATA = await resp.json();
-        initMap();
-        return;
-      }
-    } catch (_) {}
-  }
+  try {
+    const resp = await fetch('listiny_data.json');
+    if (resp.ok) {
+      DATA = await resp.json();
+      initMap();
+      return;
+    }
+  } catch (_) {}
   document.getElementById('map').innerHTML =
     '<p style="padding:40px;color:#e05c5c;text-align:center">Nepodařilo se načíst data (listiny_data.json).</p>';
 }
