@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa itineráře Přemysla Otakara II.</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root {
+  --bg: #f5f3ef;
+  --accent: #e05c5c;
+  --accent2: #c94444;
+  --text: #1a1614;
+  --text3: #888078;
+  --border: #e0dbd0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; font-family: 'Lora', Georgia, serif; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; background: var(--bg); min-height: 100vh; }
+
+.header { background: var(--accent); color: white; padding: 24px; border-radius: 8px; margin-bottom: 20px; }
+.header h1 { font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 700; margin-bottom: 8px; }
+.header p { font-size: 14px; opacity: 0.95; }
+
+.map-wrapper { background: white; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+#map { width: 100%; height: 700px; }
+
+.legend { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-top: 20px; }
+.legend h3 { font-family: 'Montserrat', sans-serif; color: var(--accent); margin-bottom: 12px; font-size: 14px; text-transform: uppercase; }
+.legend p { font-size: 13px; line-height: 1.6; color: var(--text); margin-bottom: 8px; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 20px; }
+.stat-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.stat-card h4 { font-family: 'Montserrat', sans-serif; color: var(--accent); font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
+.stat-card .value { font-size: 24px; font-weight: 700; color: var(--accent); }
+.stat-card p { font-size: 12px; color: var(--text3); }
+
+@media (max-width: 768px) {
+  #map { height: 500px; }
+  .container { padding: 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>🗺️ Itinerář Přemysla Otakara II.</h1>
+    <p>Interaktivní mapa míst vydání listin — klikni na bod pro detaily</p>
+  </div>
+
+  <div class="map-wrapper">
+    <div id="map"></div>
+  </div>
+
+  <div class="legend">
+    <h3>Jak číst mapu</h3>
+    <p>🔴 <strong>Červené body</strong> — místa vydání listin</p>
+    <p>📍 <strong>Větší bod</strong> = více listin vydáno v daném místě (Praha 173, Vídeň 121...)</p>
+    <p>✋ <strong>Klikni</strong> na bod → zobrazí se počet listin</p>
+    <p>🔍 <strong>Zoom</strong> — myš kolo nebo +/- tlačítka</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <h4>Celkem míst</h4>
+      <div class="value">170</div>
+      <p>Rozptyl jeho moci</p>
+    </div>
+    <div class="stat-card">
+      <h4>Top místo</h4>
+      <div class="value">Praha</div>
+      <p>173 listin (16%)</p>
+    </div>
+    <div class="stat-card">
+      <h4>Druhé místo</h4>
+      <div class="value">Vídeň</div>
+      <p>121 listin (11%)</p>
+    </div>
+    <div class="stat-card">
+      <h4>Rozpětí</h4>
+      <div class="value">1200km</div>
+      <p>Východ-západ</p>
+    </div>
+  </div>
+</div>
+
+<script>
+let DATA = [];
+
+const COORDS = {"Praha": [50.0755, 14.4378], "Wien": [48.2082, 16.3738], "Brno": [49.195, 16.6068], "Graz": [47.0708, 15.4395], "Krems": [48.4138, 15.6131], "Znojmo": [48.8553, 16.0469], "Olomouc": [49.5938, 17.2519], "Linz": [48.2869, 14.285], "Písek": [49.3077, 14.1532], "Bratislava": [48.1486, 17.1077], "Salzburg": [47.8085, 13.055], "Passau": [48.5758, 13.4633], "Regensburg": [48.9704, 12.1016], "Freising": [48.3945, 11.7461], "Augsburg": [48.3701, 10.8979], "München": [48.1351, 11.582], "Ingolstadt": [48.7633, 11.4257], "Landshut": [48.5408, 12.153], "Straubing": [48.8308, 12.5703], "Amberg": [49.6428, 11.8707], "Bamberg": [49.891, 10.895], "Nürnberg": [49.4521, 11.0767], "Erlangen": [49.5965, 11.0045], "Mainz": [49.9929, 8.2473], "Worms": [49.6328, 8.3572], "Speyer": [49.3137, 8.441], "Strasbourg": [48.5734, 7.7521], "Konstanz": [47.6742, 9.1735], "Basel": [47.5596, 7.5886], "Zürich": [47.3769, 8.5469], "Bern": [46.9479, 7.4474], "Genf": [46.2044, 6.1432], "Lyon": [45.764, 4.8357], "Grenoble": [45.1885, 5.7245], "Chambéry": [45.5664, 5.9165], "Annecy": [45.8992, 6.1294], "Genève": [46.2044, 6.1432], "Vevey": [46.4612, 6.8412], "Lausanne": [46.5197, 6.6323], "Montreux": [46.4346, 6.9102], "Thonon": [46.375, 6.4794], "Chur": [46.8516, 9.5287], "St. Gallen": [47.4245, 9.3768], "Appenzell": [47.5245, 9.4083], "Feldkirch": [47.2329, 9.6017], "Trento": [46.0748, 11.1217], "Bolzano": [46.4983, 11.3547], "Meran": [46.6707, 11.1607], "Brixen": [46.7141, 11.6601], "Sterzing": [47.1816, 11.5011], "Bozen": [46.4983, 11.3547], "Klausen": [46.5912, 11.5926], "Schloss Tirol": [46.6667, 11.4833], "Bruneck": [46.4113, 11.9407], "Toblach": [46.5583, 12.2287], "Lienz": [46.8286, 12.7697], "Klagenfurt": [46.62, 14.31], "Villach": [46.6133, 13.8411], "St. Veit an der Glan": [46.3887, 14.2939], "Friesach": [46.4667, 14.5], "Spittal an der Drau": [46.6061, 13.5083], "Gmünd": [46.7292, 14.9594], "Radkersburg": [46.6867, 15.9533], "Bad Radkersburg": [46.6867, 15.9533], "Pettau": [46.4372, 15.8519], "Ptuj": [46.4372, 15.8519], "Maribor": [46.5547, 15.6426], "Celje": [46.2409, 15.2683], "Ljubljana": [46.0569, 14.5058], "Novo Mesto": [45.8066, 15.1794], "Krško": [45.8581, 15.4756], "Zagreb": [45.815, 16.0023], "Zágráb": [45.815, 16.0023], "Pécs": [46.0727, 18.235], "Sopron": [47.6803, 16.5903], "Győr": [47.6875, 17.6458], "Komárom": [47.7556, 18.1289], "Esztergom": [47.7953, 18.7569], "Budapest": [47.4979, 19.0402], "Buda": [47.4979, 19.0402], "Pest": [47.4979, 19.0402], "Óbuda": [47.544, 19.036], "Eger": [47.9019, 20.3776], "Miskolc": [48.1034, 20.7837], "Sárospatak": [48.3681, 21.5681], "Sátoraljaújhely": [48.4142, 21.6164], "Kassa": [48.7164, 21.2611], "Košice": [48.7164, 21.2611], "Debrecen": [47.5316, 21.6271], "Nagyvárad": [47.2528, 21.9383], "Oradea": [47.2528, 21.9383], "Szeged": [46.253, 20.1414], "Pétervárad": [45.8436, 20.4094], "Zemun": [44.8333, 20.4], "Belgrad": [44.8176, 20.4633], "Smederevo": [44.6619, 20.9581], "Golubac": [44.7853, 21.7236], "Vidin": [43.9995, 22.8747], "Turnu Severin": [44.6375, 22.6464], "Orsova": [44.7356, 22.3975], "Mehadia": [44.9939, 22.3261], "Karansebesch": [45.4233, 22.5078], "Lugos": [45.6814, 21.8945], "Temesvár": [45.2576, 21.2269], "Temeschburg": [45.2576, 21.2269], "Großschlatten": [45.25, 21.4], "Szeben": [45.7967, 24.1545], "Hermannstadt": [45.7967, 24.1545], "Schäßburg": [46.1963, 24.7705], "Mediasch": [46.2333, 24.9833], "Großwardein": [47.053, 21.915], "Bistritz": [47.1333, 24.5], "Klausenburg": [46.7712, 23.6236], "Kolozsvár": [46.7712, 23.6236], "Marosvásárhely": [46.5411, 24.5657], "Gyulafehérvár": [46.173, 23.5809], "Fogarasch": [45.6333, 24.9833], "Braşov": [45.6404, 25.6059], "Kronstadt": [45.6404, 25.6059], "Bukarest": [44.4268, 26.1025], "Bukurešť": [44.4268, 26.1025], "Tirgoviște": [44.8256, 25.3897], "Ploiești": [44.9479, 25.5872], "Galati": [45.4391, 28.9658], "Konstanza": [44.1598, 28.6548]};
+
+// Připravit data
+function getPlacesCount() {
+  const places = {};
+  DATA.forEach(d => {
+    if (d.lokalitat_name && d.lokalitat_name !== '???') {
+      places[d.lokalitat_name] = (places[d.lokalitat_name] || 0) + 1;
+    }
+  });
+  return places;
+}
+
+// Inicializovat mapu
+function initMap() {
+  const map = L.map('map').setView([48.5, 15.5], 6);
+  
+  // OpenStreetMap tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(map);
+
+  const places = getPlacesCount();
+  const maxCount = Math.max(...Object.values(places));
+
+  // Namalovat body
+  Object.entries(places).forEach(([place, count]) => {
+    const coords = COORDS[place];
+    if (coords) {
+      const size = 6 + (count / maxCount) * 20;
+      
+      L.circleMarker([coords[0], coords[1]], {
+        radius: size,
+        fillColor: '#e05c5c',
+        color: '#c94444',
+        weight: 2,
+        opacity: 0.9,
+        fillOpacity: 0.8
+      })
+      .bindPopup(`<strong>${place}</strong><br>${count} listin${count !== 1 ? '' : ''}`)
+      .addTo(map);
+    }
+  });
+}
+
+async function loadData() {
+  const candidates = [
+    '../listiny_data.json',
+    'listiny_data.json',
+    '/listiny_data.json'
+  ];
+  for (const url of candidates) {
+    try {
+      const resp = await fetch(url);
+      if (resp.ok) {
+        DATA = await resp.json();
+        initMap();
+        return;
+      }
+    } catch (_) {}
+  }
+  document.getElementById('map').innerHTML =
+    '<p style="padding:40px;color:#e05c5c;text-align:center">Nepodařilo se načíst data (listiny_data.json).</p>';
+}
+
+document.addEventListener('DOMContentLoaded', loadData);
+</script>
+
+</body>
+</html>
