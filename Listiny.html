@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Seznam listin — Itinerář Otakara II.</title>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg: #f5f3ef;
@@ -26,26 +25,9 @@
 html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Georgia, serif; }
 .container { max-width: 1400px; margin: 0 auto; padding: 20px; min-height: 100vh; }
 
-.header { background: var(--accent); color: white; padding: 24px; border-radius: 8px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
-.header-text h1 { font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
-.header-text p { font-size: 14px; opacity: 0.95; }
-.btn-header { padding: 10px 20px; background: transparent; color: white; border: 2px solid white; border-radius: 4px; font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; white-space: nowrap; letter-spacing: 0.5px; }
-.btn-header:hover { background: rgba(255,255,255,0.15); }
-
-.upload-section { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-top: 24px; }
-.upload-section h2 { font-family: 'Montserrat', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
-.drop-zone { border: 2px dashed var(--accent-dim); border-radius: 6px; padding: 32px; text-align: center; cursor: pointer; transition: border-color 0.2s, background 0.2s; margin-bottom: 16px; }
-.drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-bg); }
-.drop-zone p { font-size: 14px; color: var(--accent); margin-bottom: 4px; }
-.drop-zone small { font-size: 12px; color: var(--text3); }
-.drop-zone input[type="file"] { display: none; }
-.upload-actions { display: flex; gap: 12px; }
-.btn-upload { padding: 10px 20px; background: var(--accent); color: white; border: none; border-radius: 4px; font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; text-transform: uppercase; white-space: nowrap; }
-.btn-upload:hover { background: var(--accent2); }
-.btn-upload:disabled { opacity: 0.4; cursor: not-allowed; }
-.upload-password { padding: 10px 12px; border: 1px solid var(--border2); border-radius: 4px; font-family: 'Montserrat', sans-serif; font-size: 12px; color: var(--text); width: 180px; }
-.upload-password:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-bg); }
-.upload-status { margin-top: 12px; font-size: 13px; color: var(--text3); font-style: italic; }
+.header { background: var(--accent); color: white; padding: 24px; border-radius: 8px; margin-bottom: 24px; }
+.header h1 { font-family: 'Montserrat', sans-serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.header p { font-size: 14px; opacity: 0.95; }
 
 .filters { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; align-items: flex-end; }
 .filter-group { display: flex; flex-direction: column; gap: 6px; }
@@ -90,11 +72,8 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Geo
 
 <div class="container">
   <div class="header">
-    <div class="header-text">
-      <h1>📋 Seznam listin Otakara II.</h1>
-      <p>Veškeré listiny s pokročilým filtrováním a stránkováním</p>
-    </div>
-    <button class="btn-header" onclick="document.getElementById('upload-section').scrollIntoView({behavior:'smooth'})">↑ Aktualizovat data</button>
+    <h1>📋 Seznam listin Otakara II.</h1>
+    <p>Veškeré listiny s pokročilým filtrováním a stránkováním</p>
   </div>
 
   <div class="filters">
@@ -152,21 +131,6 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Geo
     </table>
   </div>
   <div class="pagination" id="pagination"></div>
-
-  <div class="upload-section" id="upload-section">
-    <h2>Aktualizace dat — nahrání nové tabulky</h2>
-    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
-      <p>Přetáhněte soubor xlsx sem nebo klikněte pro výběr</p>
-      <small>Podporované formáty: .xlsx</small>
-      <input type="file" id="file-input" accept=".xlsx">
-    </div>
-    <div class="upload-actions">
-      <button class="btn-upload" id="btn-download" onclick="downloadJSON()" disabled>↓ Stáhnout JSON</button>
-      <input type="password" class="upload-password" id="upload-password" placeholder="Heslo">
-      <button class="btn-upload" id="btn-upload" onclick="uploadToServer()" disabled>☁ Uložit na server</button>
-    </div>
-    <div class="upload-status" id="upload-status"></div>
-  </div>
 </div>
 
 <script>
@@ -385,76 +349,6 @@ document.getElementById('institution-select').addEventListener('change', updateT
 
 initFilters();
 updateTable();
-
-// Upload section
-let parsedJSON = null;
-
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
-const statusEl = document.getElementById('upload-status');
-
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
-});
-fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
-
-function handleFile(file) {
-  if (!file.name.endsWith('.xlsx')) {
-    statusEl.textContent = 'Chyba: soubor musí být ve formátu .xlsx';
-    return;
-  }
-  statusEl.textContent = 'Zpracovávám soubor…';
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      // Requires SheetJS — if not loaded, show error
-      if (typeof XLSX === 'undefined') { statusEl.textContent = 'Chyba: knihovna SheetJS není načtena.'; return; }
-      const wb = XLSX.read(e.target.result, { type: 'array' });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      parsedJSON = XLSX.utils.sheet_to_json(ws);
-      statusEl.textContent = `Načteno ${parsedJSON.length} záznamů z "${file.name}".`;
-      document.getElementById('btn-download').disabled = false;
-      document.getElementById('btn-upload').disabled = false;
-      dropZone.querySelector('p').textContent = `✓ ${file.name}`;
-    } catch (err) {
-      statusEl.textContent = 'Chyba při zpracování souboru: ' + err.message;
-    }
-  };
-  reader.readAsArrayBuffer(file);
-}
-
-function downloadJSON() {
-  if (!parsedJSON) return;
-  const blob = new Blob([JSON.stringify(parsedJSON, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'listiny.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-async function uploadToServer() {
-  if (!parsedJSON) return;
-  const password = document.getElementById('upload-password').value;
-  if (!password) { statusEl.textContent = 'Zadejte heslo.'; return; }
-  statusEl.textContent = 'Nahrávám na server…';
-  try {
-    const res = await fetch('save_data.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password, data: parsedJSON })
-    });
-    const json = await res.json();
-    statusEl.textContent = json.ok ? 'Uloženo! Ostatní moduly se aktualizují.' : ('Chyba: ' + (json.error || 'neznámá'));
-  } catch (err) {
-    statusEl.textContent = 'Chyba připojení: ' + err.message;
-  }
-}
 </script>
 
 </body>
