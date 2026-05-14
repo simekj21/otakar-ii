@@ -117,15 +117,9 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Geo
     <input type="file" id="file-input" accept=".xlsx" onchange="handleFileSelect(event)">
     <div class="upload-actions">
       <button class="btn-action btn-green" id="btn-download-json" onclick="downloadJson()" disabled>⬇ Stáhnout JSON</button>
-      <span class="upload-status" id="upload-status"></span>
-    </div>
-    <div class="upload-save">
       <button class="btn-action btn-blue" id="btn-save-server" onclick="saveToServer()" disabled>☁ Uložit na server</button>
+      <span class="upload-status" id="upload-status"></span>
       <span class="upload-status" id="save-status"></span>
-    </div>
-    <div class="upload-info">
-      Nahrajte xlsx → stránka zpracuje data. Poté buď <strong>stáhněte JSON</strong> a umístěte ho ručně do kořene webu,
-      nebo zadejte heslo a klikněte <strong>Uložit na server</strong> — ostatní moduly (mapa, analýza…) se okamžitě aktualizují.
     </div>
   </div>
 
