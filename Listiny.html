@@ -169,7 +169,8 @@ html, body { background: var(--bg); color: var(--text); font-family: 'Lora', Geo
         <tr>
           <th>Datum</th>
           <th>Místo</th>
-          <th>Regest</th>
+          <th>Regest-de</th>
+          <th>Regest-cz</th>
           <th>Instituce</th>
           <th>Auth.</th>
         </tr>
@@ -446,6 +447,7 @@ function renderRows(pageData) {
       <td><strong>${d.Datum || '?'}</strong></td>
       <td>${d.lokalitat_name || '?'}</td>
       <td><small>${(d.kurzes_regest || '').substring(0, 80)}</small></td>
+      <td><small>${(d['cs-verze'] || '').substring(0, 80)}</small></td>
       <td><small>${(d.beschenkte_institution_text || '').substring(0, 50)}</small></td>
       <td>${d.verfalscht ? '✗' : '✓'}</td>
     </tr>
